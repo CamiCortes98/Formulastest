@@ -4,6 +4,10 @@ import pandas as pd
 import re
 import csv
 import tabula
+from tkinter import Label
+import pdfplumber
+
+
 
 #Funcion para registrar usuarios, solo deja crear el usuario y lo almacena si el correo esta bien escrito y la contraseña posee una minuscula, una mayuscula, un numero y un minimo de 8 caracteres.
 
@@ -52,38 +56,66 @@ def convertir_pdf_a_csv():
 
 def pdf_a_excel():
     file_path = filedialog.askopenfilename(title="Seleccionar archivo PDF", filetypes=(("Archivos de PDF", "*.pdf"), ("Todos los archivos", "*.*")))
-    if file_path:
-        output_path = filedialog.asksaveasfilename(title="Guardar como archivo Excel", defaultextension=".xlsx", filetypes=(("Archivos de Excel", "*.xlsx"), ("Todos los archivos", "*.*")))
-        if output_path:
-            # Extraer datos del PDF
-            df = tabula.read_pdf(file_path, pages='all')
-            # Escribir los datos en un archivo Excel
-            writer = pd.ExcelWriter(output_path)
-            df.to_excel(writer, index=False)
-            writer.save()                
+    
+    if not file_path:
+        print("No se ha seleccionado ningún archivo PDF.")
+        return
+    
+    output_path = filedialog.asksaveasfilename(title="Guardar como archivo Excel", defaultextension=".xlsx", filetypes=(("Archivos de Excel", "*.xlsx"), ("Todos los archivos", "*.*")))
+    
+    if not output_path:
+        print("No se ha seleccionado ninguna ubicación para guardar el archivo Excel.")
+        return
+
+    # Extraer datos del PDF y organizarlos en una lista de DataFrames
+    with pdfplumber.open(file_path) as pdf:
+        pages = pdf.pages
+        data_frames = []
+        for page in pages:
+            table = page.extract_table()
+            if table:
+                df = pd.DataFrame(table[1:], columns=table[0])
+                data_frames.append(df)
+
+    # Concatenar todos los DataFrames en uno solo
+    if data_frames:
+        result_df = pd.concat(data_frames, ignore_index=True)
+        
+        # Escribir los datos en un archivo Excel
+        writer = pd.ExcelWriter(output_path, engine='xlsxwriter')
+        result_df.to_excel(writer, index=False, sheet_name='Sheet1')
+        writer.close()  # Utilizar solo esta línea, eliminar la línea duplicada
+        print("El archivo PDF se ha convertido a Excel con éxito.")
+    else:
+        print("No se encontraron tablas en el PDF.")       
 
 def menu():
     root = tk.Tk()
-    root.title("Prueba de formulas")
+    root.configure(background="#1294a7")
     root.geometry("500x500")
+    global label
+    frame = tk.Frame(root, bg="#1294a7")  # Cambia el color de fondo del frame a un tono específico
+    frame.pack()
+  
 
-    label = tk.Label(root, text="Seleccione una opción:")
+    label = tk.Label(root, text="Seleccione una opción:", background="#1294a7", fg= "white")
     label.pack()
+    label.config(font=('Helvetica', 13))
     #Boton registrar usuario
-    button_registrar = tk.Button(root, text="Registrar usuario", command=registrar_usuario_interfaz)
-    button_registrar.pack()
+    button_registrar = tk.Button(root, text="Registrar usuario", command=registrar_usuario_interfaz, pady=5, background="lightblue", font=("Helvetica", 8))
+    button_registrar.pack(side= "top", padx= 15, pady= 8)
     #Boton conversor
-    button_excel = tk.Button(root, text="Convertir Excel a CSV", command=excel_a_csv)
-    button_excel.pack()
+    button_excel = tk.Button(root, text="Convertir Excel a CSV", command=excel_a_csv, pady = 5, background="lightblue",font=("Helvetica", 8))
+    button_excel.pack(side= "top", padx= 15, pady= 8)
 
     #Boton conversor
-    root.title("Convertir de PDF a CSV")
-    boton_convertir = tk.Button(root, text="Convertir de PDF a CSV", command=convertir_pdf_a_csv)
-    boton_convertir.pack()
+    
+    boton_convertir = tk.Button(root, text="Convertir de PDF a CSV", command=convertir_pdf_a_csv, pady= 5, background="lightblue", font=("Helvetica", 8))
+    boton_convertir.pack(side= "top", padx= 15, pady= 8)
     #Boton conversor
-    root.title("Convertir de PDF a Excel")
-    boton_convertir = tk.Button(root, text="Convertir de PDF a Excel", command=pdf_a_excel)
-    boton_convertir.pack()
+    root.title("Conversor de datos")
+    boton_convertir = tk.Button(root, text="Convertir de PDF a Excel", command=pdf_a_excel, pady = 5, background="lightblue", font=("Helvetica", 8))
+    boton_convertir.pack(side= "top", padx= 15, pady= 8)
 
     root.mainloop()
 
