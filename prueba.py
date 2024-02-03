@@ -50,26 +50,39 @@ def convertir_pdf_a_csv():
             tabula.convert_into(file_path, output_path, output_format="csv", pages='all')
 
 
-                
+def pdf_a_excel():
+    file_path = filedialog.askopenfilename(title="Seleccionar archivo PDF", filetypes=(("Archivos de PDF", "*.pdf"), ("Todos los archivos", "*.*")))
+    if file_path:
+        output_path = filedialog.asksaveasfilename(title="Guardar como archivo Excel", defaultextension=".xlsx", filetypes=(("Archivos de Excel", "*.xlsx"), ("Todos los archivos", "*.*")))
+        if output_path:
+            # Extraer datos del PDF
+            df = tabula.read_pdf(file_path, pages='all')
+            # Escribir los datos en un archivo Excel
+            writer = pd.ExcelWriter(output_path)
+            df.to_excel(writer, index=False)
+            writer.save()                
 
 def menu():
     root = tk.Tk()
-    root.title("Menú")
-    root.geometry("500x400")
+    root.title("Prueba de formulas")
+    root.geometry("500x500")
 
     label = tk.Label(root, text="Seleccione una opción:")
     label.pack()
-
+    #Boton registrar usuario
     button_registrar = tk.Button(root, text="Registrar usuario", command=registrar_usuario_interfaz)
     button_registrar.pack()
-
+    #Boton conversor
     button_excel = tk.Button(root, text="Convertir Excel a CSV", command=excel_a_csv)
     button_excel.pack()
 
-
+    #Boton conversor
     root.title("Convertir de PDF a CSV")
-
     boton_convertir = tk.Button(root, text="Convertir de PDF a CSV", command=convertir_pdf_a_csv)
+    boton_convertir.pack()
+    #Boton conversor
+    root.title("Convertir de PDF a Excel")
+    boton_convertir = tk.Button(root, text="Convertir de PDF a Excel", command=pdf_a_excel)
     boton_convertir.pack()
 
     root.mainloop()
