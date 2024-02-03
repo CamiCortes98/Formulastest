@@ -30,19 +30,23 @@ def excel_a_csv():
     root = tk.Tk()
     root.withdraw()
     file_path = filedialog.askopenfilename(title="Seleccionar archivo Excel", filetypes=(("Archivos de Excel", "*.xlsx"), ("Todos los archivos", "*.*")))
-    if file_path:
-        df = pd.read_excel(file_path, sheet_name=None)
-        sheet_names = list(df.keys())
-        num_sheets = len(sheet_names)
-        num_sheets_to_convert = 1  # Puedes modificar esto para permitir al usuario seleccionar la cantidad de hojas a convertir
-        selected_sheet_names = sheet_names[:num_sheets_to_convert]
-        for sheet_name in selected_sheet_names:
-            selected_df = df[sheet_name]
-            array = selected_df.to_numpy()
-            csv_file_name = filedialog.asksaveasfilename(defaultextension='.csv', filetypes=(("Archivos CSV", "*.csv"), ("Todos los archivos", "*.*")))
-            if csv_file_name:
-                selected_df.to_csv(csv_file_name, index = False)
-                print(array)
+    
+    if not file_path:
+        print("No se ha seleccionado ningún archivo Excel.")
+        return
+    
+    df = pd.read_excel(file_path, engine='openpyxl', sheet_name=None)
+    sheet_names = list(df.keys())
+    
+    for sheet_name in sheet_names:
+        selected_df = df[sheet_name]
+        array = selected_df.to_numpy()
+        
+        csv_file_name = filedialog.asksaveasfilename(defaultextension='.csv', filetypes=(("Archivos CSV", "*.csv"), ("Todos los archivos", "*.*")))
+        
+        if csv_file_name:
+            selected_df.to_csv(csv_file_name, index=False)
+            print(f"Se ha convertido la hoja '{sheet_name}' a CSV con éxito.")
 
 #Funcion para convertir de PDF a Csv
                 
