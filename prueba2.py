@@ -4,12 +4,64 @@ import pandas as pd
 import re
 import csv
 import tabula
-from tkinter import Label
+from tkinter import messagebox
 import pdfplumber
 
+class DataFrameManipulator:
+    def __init__(self, master):
+        self.master = master
+        self.master.title("Manipulador de DataFrame")
+        
+        self.df = None
+        self.file_path = None
 
+        self.load_button = tk.Button(master, text="Cargar Excel", command=self.load_excel)
+        self.load_button.pack(pady=10)
 
-#Funcion para registrar usuarios, solo deja crear el usuario y lo almacena si el correo esta bien escrito y la contraseña posee una minuscula, una mayuscula, un numero y un minimo de 8 caracteres.
+        self.tabulation_label = tk.Label(master, text="Seleccione el tipo de tabulación:")
+        self.tabulation_label.pack()
+
+        self.tabulation_var = tk.StringVar()
+        self.tabulation_var.set("\t")  
+        self.tabulation_options = ["\t", ",", ";"]  
+
+        self.tabulation_menu = tk.OptionMenu(master, self.tabulation_var, *self.tabulation_options)
+        self.tabulation_menu.pack(pady=5)
+
+        self.column_label = tk.Label(master, text="Ingrese la ubicación de las columnas (separadas por coma):")
+        self.column_label.pack()
+
+        self.column_entry = tk.Entry(master)
+        self.column_entry.pack(pady=10)
+
+        self.process_button = tk.Button(master, text="Procesar", command=self.process_data)
+        self.process_button.pack(pady=10)
+
+    def load_excel(self):
+        file_path = filedialog.askopenfilename(title="Seleccionar archivo Excel", filetypes=[("Excel files", "*.xlsx;*.xls")])
+        if file_path:
+            self.file_path = file_path
+            try:
+                self.df = pd.read_excel(file_path)
+                print("Archivo Excel cargado exitosamente.")
+            except Exception as e:
+                print(f"Error al cargar el archivo Excel: {e}")
+                messagebox.showerror("Error", f"Error al cargar el archivo Excel:\n{e}")
+
+    def process_data(self):
+        if self.df is None:
+            messagebox.showwarning("Advertencia", "Por favor, carga un archivo Excel primero.")
+            return
+
+        tabulation = self.tabulation_var.get()
+        columns_str = self.column_entry.get()
+        columns = [col.strip() for col in columns_str.split(',')]
+
+        try:
+            result_df = self.df[columns]
+            print(result_df)
+        except KeyError as e:
+            messagebox.showerror("Error", f"La columna '{e.args[0]}' no existe en el DataFrame.")
 
 def registrar_usuario(email, contraseña):
     usuario = {}
@@ -23,8 +75,6 @@ def registrar_usuario(email, contraseña):
                 print("Usuario registrado exitosamente")
     else:
         print("El usuario no pudo ser creado")
-
-#Funcion para realizar el cambio de archivo excel a csv
 
 def excel_a_csv():
     root = tk.Tk()
@@ -48,15 +98,12 @@ def excel_a_csv():
                 selected_df.to_csv(csv_file_name, index=False)
                 print(f"Se ha convertido la hoja '{sheet_name}' a CSV con éxito.")
 
-#Funcion para convertir de PDF a Csv
-                
 def convertir_pdf_a_csv():
     file_path = filedialog.askopenfilename(title="Seleccionar archivo PDF", filetypes=(("Archivos de PDF", "*.pdf"), ("Todos los archivos", "*.*")))
     if file_path:
         output_path = filedialog.asksaveasfilename(defaultextension='.csv', filetypes=(("Archivos CSV", "*.csv"), ("Todos los archivos", "*.*")))
         if output_path:
             tabula.convert_into(file_path, output_path, output_format="csv", pages='all')
-
 
 def pdf_a_excel():
     file_path = filedialog.askopenfilename(title="Seleccionar archivo PDF", filetypes=(("Archivos de PDF", "*.pdf"), ("Todos los archivos", "*.*")))
@@ -71,7 +118,6 @@ def pdf_a_excel():
         print("No se ha seleccionado ninguna ubicación para guardar el archivo Excel.")
         return
 
-    # Extraer datos del PDF y organizarlos en una lista de DataFrames
     with pdfplumber.open(file_path) as pdf:
         pages = pdf.pages
         data_frames = []
@@ -81,50 +127,52 @@ def pdf_a_excel():
                 df = pd.DataFrame(table[1:], columns=table[0])
                 data_frames.append(df)
 
-    # Concatenar todos los DataFrames en uno solo
     if data_frames:
         result_df = pd.concat(data_frames, ignore_index=True)
     
-    # Escribir los datos en un archivo Excel
         writer = pd.ExcelWriter(output_path, engine='xlsxwriter')
         result_df.to_excel(writer, index=False, sheet_name="Sheet1")
-        writer.close()  # Utilizar solo esta línea, eliminar la línea duplicada
+        writer.close()
         print("El archivo PDF se ha convertido a Excel con éxito.")
     else:
-        print("No se encontraron tablas en el PDF.")       
+        print("No se encontraron tablas en el PDF.")
 
 def menu():
     root = tk.Tk()
     root.configure(background="#1294a7")
     root.geometry("500x500")
     global label
-    frame = tk.Frame(root, bg="#1294a7")  # Cambia el color de fondo del frame a un tono específico
+    frame = tk.Frame(root, bg="#1294a7") 
     frame.pack()
-  
 
-    label = tk.Label(root, text="Seleccione una opción:", background="#1294a7", fg= "white")
+    label = tk.Label(root, text="Seleccione una opción:", background="#1294a7", fg="white")
     label.pack()
     label.config(font=('Helvetica', 13))
-    #Boton registrar usuario
+
     button_registrar = tk.Button(root, text="Registrar usuario", command=registrar_usuario_interfaz, pady=5, background="lightblue", font=("Helvetica", 8))
-    button_registrar.pack(side= "top", padx= 15, pady= 8)
-    #Boton conversor
-    button_excel = tk.Button(root, text="Convertir Excel a CSV", command=excel_a_csv, pady = 5, background="lightblue",font=("Helvetica", 8))
-    button_excel.pack(side= "top", padx= 15, pady= 8)
+    button_registrar.pack(side="top", padx=15, pady=8)
 
-    #Boton conversor
-    
-    boton_convertir = tk.Button(root, text="Convertir de PDF a CSV", command=convertir_pdf_a_csv, pady= 5, background="lightblue", font=("Helvetica", 8))
-    boton_convertir.pack(side= "top", padx= 15, pady= 8)
-    #Boton conversor
+    button_excel = tk.Button(root, text="Convertir Excel a CSV", command=excel_a_csv, pady=5, background="lightblue", font=("Helvetica", 8))
+    button_excel.pack(side="top", padx=15, pady=8)
+
+    boton_convertir = tk.Button(root, text="Convertir de PDF a CSV", command=convertir_pdf_a_csv, pady=5, background="lightblue", font=("Helvetica", 8))
+    boton_convertir.pack(side="top", padx=15, pady=8)
+
+    boton_convertir_pdf_excel = tk.Button(root, text="Convertir de PDF a Excel", command=pdf_a_excel, pady=5, background="lightblue", font=("Helvetica", 8))
+    boton_convertir_pdf_excel.pack(side="top", padx=15, pady=8)
+
+    boton_df_manipulator = tk.Button(root, text="Manipular DataFrame", command=mostrar_df_manipulator, pady=5, background="lightblue", font=("Helvetica", 8))
+    boton_df_manipulator.pack(side="top", padx=15, pady=8)
+
     root.title("Conversor de datos")
-    boton_convertir = tk.Button(root, text="Convertir de PDF a Excel", command=pdf_a_excel, pady = 5, background="lightblue", font=("Helvetica", 8))
-    boton_convertir.pack(side= "top", padx= 15, pady= 8)
-
     root.mainloop()
 
+def mostrar_df_manipulator():
+    df_manipulator_root = tk.Toplevel()
+    df_manipulator_root.title("Manipulador de DataFrame")
+    df_manipulator_app = DataFrameManipulator(df_manipulator_root)
+
 def registrar_usuario_interfaz():
-   
     ventana = tk.Toplevel()
     ventana.title("Registrar usuario")
     ventana.geometry("500x300")
@@ -146,4 +194,3 @@ def registrar_usuario_interfaz():
 
 if __name__ == "__main__":
     menu()
-    
