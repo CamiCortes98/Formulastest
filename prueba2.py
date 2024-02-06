@@ -1,12 +1,10 @@
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 import pandas as pd
 import re
+import pdfplumber
 import csv
 import tabula
-from tkinter import messagebox
-import pdfplumber
-
 class DataFrameManipulator:
     def __init__(self, master):
         self.master = master
@@ -17,6 +15,10 @@ class DataFrameManipulator:
 
         self.load_button = tk.Button(master, text="Cargar Excel", command=self.load_excel)
         self.load_button.pack(pady=10)
+
+        # Crear la etiqueta para la ruta del archivo
+        self.file_path_label = tk.Label(master, text="Ruta del archivo Excel:")
+        self.file_path_label.pack()
 
         self.tabulation_label = tk.Label(master, text="Seleccione el tipo de tabulación:")
         self.tabulation_label.pack()
@@ -41,6 +43,7 @@ class DataFrameManipulator:
         file_path = filedialog.askopenfilename(title="Seleccionar archivo Excel", filetypes=[("Excel files", "*.xlsx;*.xls")])
         if file_path:
             self.file_path = file_path
+            self.file_path_label.config(text=f"Ruta del archivo Excel: {file_path}")
             try:
                 self.df = pd.read_excel(file_path)
                 print("Archivo Excel cargado exitosamente.")
@@ -59,7 +62,18 @@ class DataFrameManipulator:
 
         try:
             result_df = self.df[columns]
-            print(result_df)
+
+            # Solicitar al usuario la ubicación y el nombre del archivo CSV
+            file_path = filedialog.asksaveasfilename(
+                defaultextension='.csv',
+                filetypes=[("Archivos CSV", "*.csv"), ("Todos los archivos", "*.*")],
+                title="Guardar DataFrame como CSV"
+            )
+
+            if file_path:
+                result_df.to_csv(file_path, index=False)
+                messagebox.showinfo("Éxito", f"DataFrame manipulado guardado en:\n{file_path}")
+
         except KeyError as e:
             messagebox.showerror("Error", f"La columna '{e.args[0]}' no existe en el DataFrame.")
 
@@ -169,6 +183,7 @@ def menu():
 
 def mostrar_df_manipulator():
     df_manipulator_root = tk.Toplevel()
+    df_manipulator_root.geometry("500x500")
     df_manipulator_root.title("Manipulador de DataFrame")
     df_manipulator_app = DataFrameManipulator(df_manipulator_root)
 
@@ -194,3 +209,6 @@ def registrar_usuario_interfaz():
 
 if __name__ == "__main__":
     menu()
+    root = tk.Tk()
+    app = DataFrameManipulator(root)
+    root.mainloop()
